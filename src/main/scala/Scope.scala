@@ -50,8 +50,7 @@ object Main extends IOApp {
   case class Allocs[F[_]](normal: Resource[F, TestResource],
                           slowAcquisition: Resource[F, TestResource],
                           crashOpen: Resource[F, TestResource],
-                          crashClose: Resource[F, TestResource],
-  )
+                          crashClose: Resource[F, TestResource])
 
   def happyPath[F[_]: Concurrent: Timer] =
     test[F] { (allocs, scope, _) =>
