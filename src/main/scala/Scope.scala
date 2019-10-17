@@ -18,8 +18,7 @@ object Scope {
             .foldRight(().asRight[Throwable].pure[F]) {
               case (alloc, lastErrorF) =>
                 alloc.attempt.flatMap(
-                  maybeError =>
-                    lastErrorF.map(lastError => lastError >> maybeError)
+                  maybeError => lastErrorF.map(lastError => lastError >> maybeError)
                 )
             }
             .rethrow
@@ -75,8 +74,7 @@ object Main extends IOApp {
         r1 <- scope.open(allocs.normal)
         lock <- Deferred[F, Unit]
         _ <- (lock.get >> cancelMe).start
-        r2 <- scope.open(
-          Resource.liftF(lock.complete(())) >> allocs.slowAcquisition)
+        r2 <- scope.open(Resource.liftF(lock.complete(())) >> allocs.slowAcquisition)
         _ <- Timer[F].sleep(1.second)
         r3 <- scope.open(allocs.normal)
       } yield ()
@@ -142,9 +140,8 @@ object Main extends IOApp {
     }
 
   def test[F[_]: Concurrent: Timer](
-      run: (Allocs[F], Scope[F], F[Unit]) => F[Unit]
-  )(check: (Vector[Int], Vector[Int], ExitCase[Throwable]) => F[Unit])
-    : F[Unit] =
+    run: (Allocs[F], Scope[F], F[Unit]) => F[Unit]
+  )(check: (Vector[Int], Vector[Int], ExitCase[Throwable]) => F[Unit]): F[Unit] =
     for {
       idx <- Ref[F].of(1)
       allocLog <- Ref[F].of(Vector.empty[Int])
@@ -165,18 +162,18 @@ object Main extends IOApp {
       finish <- Deferred[F, Either[Throwable, Unit]]
       scope = for {
         _ <- Resource.makeCase(().pure[F])((_, ec) => {
-          (allocLog.get, deallocLog.get)
-            .mapN(check(_, _, ec))
-            .flatten
-            .attempt
-            .flatMap(finish.complete)
-        })
+              (allocLog.get, deallocLog.get)
+                .mapN(check(_, _, ec))
+                .flatten
+                .attempt
+                .flatMap(finish.complete)
+            })
         s <- Scope[F]
       } yield s
       _ <- scope
-        .use(run(allocs, _, cancel.complete(())))
-        .race(cancel.get)
-        .attempt
+            .use(run(allocs, _, cancel.complete(())))
+            .race(cancel.get)
+            .attempt
       _ <- finish.get.rethrow
     } yield ()
 }
