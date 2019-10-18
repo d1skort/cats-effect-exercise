@@ -13,23 +13,23 @@ object Scope {
   def apply[F[_]: Sync]: Resource[F, Scope[F]] =
     Resource
       .make(Ref.of[F, List[F[Unit]]](Nil)) { ref =>
-        ref.get.flatMap { allocs =>
-          allocs
+        ref.get.flatMap { finalizers =>
+          finalizers
             .foldRight(().asRight[Throwable].pure[F]) {
-              case (alloc, lastErrorF) =>
-                alloc.attempt.flatMap(
+              case (finalize, lastErrorF) =>
+                finalize.attempt.flatMap(
                   maybeError => lastErrorF.map(lastError => lastError >> maybeError)
                 )
             }
             .rethrow
         }
       }
-      .map { allocs =>
+      .map { finalizers =>
         new Scope[F] {
           def open[A](ra: Resource[F, A]): F[A] =
             ra.allocated.bracket { case (a, _) => a.pure[F] } {
               case (_, releaseMe) =>
-                allocs.update(releaseMe :: _)
+                finalizers.update(releaseMe :: _)
             }
         }
       }
