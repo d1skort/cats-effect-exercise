@@ -15,7 +15,7 @@ object Nursery {
   private def waitAllFibers[F[_]: Monad](running: Ref[F, Int]): F[Unit] =
     running.get.map(_ === 0).ifM(().pure[F], waitAllFibers(running))
 
-  private def cancelAllFibers[F[_]: Sync](ref: Ref[F, List[F[Unit]]]): F[Unit] =
+  private def cancelAllFibers[F[_]: Monad](ref: Ref[F, List[F[Unit]]]): F[Unit] =
     ref.get.flatMap(_.sequence_)
 
   def apply[F[_]: Concurrent]: Resource[F, Nursery[F]] =
