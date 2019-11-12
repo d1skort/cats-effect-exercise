@@ -34,9 +34,7 @@ object Nursery {
                     case _                  => ().pure[F]
                   }
                   .start
-                  .bracket(fiber => cancelTokens.update(fiber.cancel :: _).as(fiber))(
-                    _ => ().pure[F]
-                  )
+                  .bracket(_.pure[F])(fiber => cancelTokens.update(fiber.cancel :: _))
             }
             nursery.pure[F]
           } {
@@ -58,7 +56,7 @@ object Main2 extends IOApp {
       manualCancelWorks[IO] >> IO(println("manualCancelWorks done")) >>
       errorsCancelOthers[IO] >> IO(println("errorsCancelOthers done")) >>
       cancellationIsPropagated[IO] >> IO(println("cancellationIsPropagated done")) >>
-      parSequenceParity[IO] >>
+//      parSequenceParity[IO] >>
       IO(println("Run completed!")) >>
       IO.pure(ExitCode.Success)
 
